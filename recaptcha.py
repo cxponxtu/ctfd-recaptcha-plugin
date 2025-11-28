@@ -49,7 +49,22 @@ def load(app):
         inserted_div, inserted_script = False, False
         for form in root.iter('form'):
             for button in form.xpath('.//button[@type="submit"] | .//input[@type="submit"]'):
-                button.addprevious(provider.challenge_tag())
+                # Get the parent row div
+                parent = button.getparent()
+                row_parent = parent.getparent() if parent is not None else None
+                
+                # Create a wrapper div for captcha with proper Bootstrap classes
+                captcha_wrapper = etree.Element('div', attrib={'class': 'row mb-3'})
+                captcha_col = etree.Element('div', attrib={'class': 'col-12'})
+                captcha_col.append(provider.challenge_tag())
+                captcha_wrapper.append(captcha_col)
+                
+                # Insert before the button's row
+                if row_parent is not None:
+                    row_parent.addprevious(captcha_wrapper)
+                else:
+                    button.addprevious(provider.challenge_tag())
+                    
                 logger.debug("Inserted captcha checkbox element into page")
                 inserted_div = True
 

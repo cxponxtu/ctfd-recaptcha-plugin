@@ -104,8 +104,9 @@ class ReCaptchaProvider(CaptchaProvider):
         return etree.Element(
             'div',
             attrib = {
-                'class': 'g-recaptcha float-left',
+                'class': 'g-recaptcha',
                 'data-sitekey': self.site_key,
+                'data-theme': 'dark',
             }
         )
 
@@ -132,8 +133,9 @@ class HCaptchaProvider(CaptchaProvider):
         return etree.Element(
             'div',
             attrib = {
-                'class': 'h-captcha float-left',
+                'class': 'h-captcha',
                 'data-sitekey': self.site_key,
+                'data-theme': 'dark',
             }
         )
 
