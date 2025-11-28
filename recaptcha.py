@@ -102,7 +102,42 @@ def load(app):
 
         return wrapper
 
+    def reset_password_decorator(reset_password_func):
+        @wraps(reset_password_func)
+        def wrapper(*args, **kwargs):
+            if request.method == 'POST':
+                errors = []
+                verified = None
+                try:
+                    verified = provider.verify(request.form, request.remote_addr)
+                except VerificationError as e:
+                    errors.append("Captcha service is currently unavailable. Please try again later")
+
+                if verified is False:
+                    errors.append("Please check the captcha box to verify you are human")
+
+                if not verified:
+                    # Preserve the mode and data for reset password
+                    mode = kwargs.get('data', None)
+                    if mode:
+                        return render_template(
+                            'reset_password.html',
+                            errors=errors,
+                            mode='set',
+                        )
+                    else:
+                        return render_template(
+                            'reset_password.html',
+                            errors=errors,
+                            email=request.form.get('email', ''),
+                        )
+            return reset_password_func(*args, **kwargs)
+
+        return wrapper
+
     app.view_functions['auth.register'] = register_decorator(app.view_functions['auth.register'])
+    app.view_functions['auth.reset_password'] = reset_password_decorator(app.view_functions['auth.reset_password'])
 
     if app.config['CAPTCHA_INSERT_TAGS']:
         app.view_functions['auth.register'] = insert_tags_decorator(app.view_functions['auth.register'])
+        app.view_functions['auth.reset_password'] = insert_tags_decorator(app.view_functions['auth.reset_password'])
