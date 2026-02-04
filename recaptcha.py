@@ -150,9 +150,34 @@ def load(app):
 
         return wrapper
 
+    def confirm_decorator(confirm_func):
+        @wraps(confirm_func)
+        def wrapper(*args, **kwargs):
+            if request.method == 'POST' and kwargs.get('data') is None:
+                errors = []
+                verified = None
+                try:
+                    verified = provider.verify(request.form, request.remote_addr)
+                except VerificationError as e:
+                    errors.append("Captcha service is currently unavailable. Please try again later")
+
+                if verified is False:
+                    errors.append("Please check the captcha box to verify you are human")
+
+                if not verified:
+                    return render_template(
+                        'confirm.html',
+                        errors=errors,
+                    )
+            return confirm_func(*args, **kwargs)
+
+        return wrapper
+
     app.view_functions['auth.register'] = register_decorator(app.view_functions['auth.register'])
     app.view_functions['auth.reset_password'] = reset_password_decorator(app.view_functions['auth.reset_password'])
+    app.view_functions['auth.confirm'] = confirm_decorator(app.view_functions['auth.confirm'])
 
     if app.config['CAPTCHA_INSERT_TAGS']:
         app.view_functions['auth.register'] = insert_tags_decorator(app.view_functions['auth.register'])
         app.view_functions['auth.reset_password'] = insert_tags_decorator(app.view_functions['auth.reset_password'])
+        app.view_functions['auth.confirm'] = insert_tags_decorator(app.view_functions['auth.confirm'])
